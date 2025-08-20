@@ -2,10 +2,36 @@
 import { RouterLink, RouterView } from 'vue-router'
 import HelloWorld from './components/HelloWorld.vue'
 import PWAUpdatePrompt from '@/components/PWAUpdatePrompt.vue'
+
+async function forceReinstallSW() {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('[PWA] 当前环境不支持 Service Worker')
+    return
+  }
+  try {
+    const regs = await navigator.serviceWorker.getRegistrations()
+    console.log('[PWA] 即将注销注册数：', regs.length)
+    await Promise.allSettled(regs.map((r) => r.unregister()))
+  } catch (e) {
+    console.error('[PWA] 注销失败：', e)
+  }
+  // 使用 cache-busting 参数强制加载最新入口与 sw.js
+  const url = new URL(location.href)
+  url.searchParams.set('sw-reinstall', Date.now().toString())
+  // 用 replace 避免历史记录里留下无意义的回退步骤
+  location.replace(url.toString())
+}
 </script>
 
 <template>
   <header>
+    <button
+      @click="forceReinstallSW"
+      style="margin: 8px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 6px"
+    >
+      强制重装 SW（卸载并重新注册） 123
+    </button>
+
     <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
 
     <div class="wrapper">
